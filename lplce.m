@@ -1,0 +1,26 @@
+function [ll_col] = lplce(settings)
+%Using L_FD_LHS function, isolate the diffusivity term so we can apply it
+%to g and find h_ij.
+cot_term=[0;cot(settings.theta(2:(settings.n_theta-1)));0];
+
+pre_ll=transpose(...
+        spdiags(...
+        [cot_term/...
+        (2*settings.dtheta)+settings.dtheta^(-2) ...
+        -2*settings.dtheta^(-2)*ones(settings.n_theta,1) ...
+        -cot_term/(2*settings.dtheta)+settings.dtheta^(-2)]...
+        ,-1:1,settings.n_theta,settings.n_theta));
+    ll_col=kron(pre_ll,speye(settings.n_phi,settings.n_phi));
+    
+    sin2_term=[0;sin(settings.theta(2:(settings.n_theta-1))).^(-2);0];
+    d2phi_wide=spdiags(ones(settings.n_phi,1)*[1/90 -3/20 3/2 -49/18 3/2 -3/20 1/90],0:6,settings.n_phi,settings.n_phi+6);
+    d2phi=d2phi_wide(:,3+(1:settings.n_phi));
+    d2phi(1:3,end-2:end)=d2phi(1:3,end-2:end)+d2phi_wide(1:3,1:3);
+    d2phi(end-2:end,1:3)=d2phi(end-2:end,1:3)+d2phi_wide(end-2:end,end-2:end);
+    
+    ll_col=ll_col+...
+        kron(spdiags(sin2_term,0,settings.n_theta,settings.n_theta),...
+        d2phi)*settings.dphi^(-2);
+    
+end
+
